@@ -1,0 +1,16 @@
+name: meeting_summary
+description: Records team meetings and shows an AI summary.
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  record: ^5.1.2
+  path_provider: ^2.1.3
+
+flutter:
+  uses-material-design: true
