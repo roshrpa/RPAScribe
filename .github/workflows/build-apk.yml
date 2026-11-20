@@ -34,6 +34,7 @@ jobs:
         run: |
           MANIFEST=android/app/src/main/AndroidManifest.xml
           sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.INTERNET" />' "$MANIFEST"
           sed -i 's/android:label="[^"]*"/android:label="RPAScribe"/' "$MANIFEST"
           for f in android/app/build.gradle android/app/build.gradle.kts; do
             [ -f "$f" ] && sed -i -E 's/minSdk(Version)?( *=)? *flutter\.minSdkVersion/minSdk = 23/' "$f"
@@ -45,7 +46,7 @@ jobs:
         run: |
           flutter pub get
           dart run flutter_launcher_icons
-          flutter build apk --release
+          flutter build apk --release --dart-define=SERVER_URL=${{ secrets.SERVER_URL || 'https://your-server.example.com' }} --dart-define=APP_TOKEN=${{ secrets.APP_TOKEN || 'change-me' }}
 
       - uses: actions/upload-artifact@v4
         with:

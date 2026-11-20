@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
 
+import 'api.dart';
+
 void main() => runApp(const MeetingApp());
 
 class MeetingApp extends StatelessWidget {
@@ -35,6 +37,7 @@ class Meeting {
   final DateTime date;
   final Duration duration;
   final String audioPath;
+  String? transcript;
 }
 
 String formatDuration(Duration d) {
@@ -171,7 +174,12 @@ class _RecordingScreenState extends State<RecordingScreen> {
       _path =
           '${dir.path}/meeting_${_startedAt.millisecondsSinceEpoch}.m4a';
       await _recorder.start(
-        const RecordConfig(encoder: AudioEncoder.aacLc),
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 32000,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
         path: _path!,
       );
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -282,10 +290,18 @@ class _RecordingScreenState extends State<RecordingScreen> {
 
 // ------------------------------------------------------------- Summary
 
-class SummaryScreen extends StatelessWidget {
+class SummaryScreen extends StatefulWidget {
   const SummaryScreen({super.key, required this.meeting});
 
   final Meeting meeting;
+
+  @override
+  State<SummaryScreen> createState() => _SummaryScreenState();
+}
+
+class _SummaryScreenState extends State<SummaryScreen> {
+  bool _loading = false;
+  String? _error;
 
   // Placeholder content. In step 3 this comes from the Claude API.
   static const Map<String, String> _sample = {
@@ -298,7 +314,29 @@ class SummaryScreen extends StatelessWidget {
   };
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.meeting.transcript == null) _transcribe();
+  }
+
+  Future<void> _transcribe() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final text = await transcribeAudio(widget.meeting.audioPath);
+      widget.meeting.transcript = text;
+    } catch (e) {
+      _error = 'Couldn\'t transcribe this recording. Check your connection and try again.';
+    }
+    if (mounted) setState(() => _loading = false);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final meeting = widget.meeting;
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Summary'),
@@ -318,26 +356,49 @@ class SummaryScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          Text(meeting.title,
-              style: Theme.of(context).textTheme.titleLarge),
+          Text(meeting.title, style: theme.textTheme.titleLarge),
           const SizedBox(height: 4),
           Text(
             '${formatDate(meeting.date)} · ${formatDuration(meeting.duration)}',
-            style: Theme.of(context).textTheme.bodySmall,
+            style: theme.textTheme.bodySmall,
           ),
           const SizedBox(height: 16),
           for (final entry in _sample.entries) ...[
             Text(
               entry.key,
-              style: Theme.of(context)
-                  .textTheme
-                  .titleSmall
-                  ?.copyWith(color: Theme.of(context).colorScheme.primary),
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(color: theme.colorScheme.primary),
             ),
             const SizedBox(height: 4),
             Text(entry.value),
             const SizedBox(height: 16),
           ],
+          const Divider(),
+          const SizedBox(height: 8),
+          Text('Transcript', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          if (_loading)
+            const Row(
+              children: [
+                SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                SizedBox(width: 12),
+                Text('Transcribing…'),
+              ],
+            )
+          else if (_error != null) ...[
+            Text(_error!),
+            const SizedBox(height: 8),
+            OutlinedButton(onPressed: _transcribe, child: const Text('Try again')),
+          ] else
+            SelectableText(
+              (meeting.transcript ?? '').isEmpty
+                  ? 'No speech detected.'
+                  : meeting.transcript!,
+            ),
         ],
       ),
     );
