@@ -6,11 +6,11 @@ API keys live here, never in the app.
 ## Run locally
     cd server
     npm install
-    OPENAI_API_KEY=sk-... APP_TOKEN=choose-a-long-secret npm start
+    GROQ_API_KEY=gsk_... APP_TOKEN=choose-a-long-secret npm start
 
 ## Deploy
-Any Node 18+ host works (Render, Railway, Fly.io, a VPS). Set the two
-environment variables above. The app needs an https URL.
+Any Node 18+ host works (Render, Railway, Fly.io, a VPS). Set `APP_TOKEN` and
+either `GROQ_API_KEY` (free tier) or `OPENAI_API_KEY`. The app needs an https URL.
 
 Endpoints:
 - GET  /health

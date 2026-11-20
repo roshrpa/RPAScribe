@@ -1,11 +1,26 @@
 import express from "express";
 import multer from "multer";
 
-const { OPENAI_API_KEY, APP_TOKEN, PORT = 3000 } = process.env;
-if (!OPENAI_API_KEY || !APP_TOKEN) {
-  console.error("Set OPENAI_API_KEY and APP_TOKEN environment variables.");
+const { GROQ_API_KEY, OPENAI_API_KEY, APP_TOKEN, PORT = 3000 } = process.env;
+if (!(GROQ_API_KEY || OPENAI_API_KEY) || !APP_TOKEN) {
+  console.error(
+    "Set APP_TOKEN and either GROQ_API_KEY (free tier) or OPENAI_API_KEY."
+  );
   process.exit(1);
 }
+
+// Groq is used when its key is set; otherwise OpenAI.
+const provider = GROQ_API_KEY
+  ? {
+      url: "https://api.groq.com/openai/v1/audio/transcriptions",
+      key: GROQ_API_KEY,
+      model: "whisper-large-v3",
+    }
+  : {
+      url: "https://api.openai.com/v1/audio/transcriptions",
+      key: OPENAI_API_KEY,
+      model: "whisper-1",
+    };
 
 const app = express();
 const upload = multer({
@@ -31,12 +46,12 @@ app.post("/transcribe", auth, upload.single("audio"), async (req, res) => {
       new Blob([req.file.buffer]),
       req.file.originalname || "meeting.m4a"
     );
-    form.append("model", "whisper-1");
+    form.append("model", provider.model);
     form.append("response_format", "json");
 
-    const r = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    const r = await fetch(provider.url, {
       method: "POST",
-      headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
+      headers: { Authorization: `Bearer ${provider.key}` },
       body: form,
     });
     const data = await r.json();
