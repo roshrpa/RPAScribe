@@ -12,7 +12,7 @@ class MeetingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Meeting Summary',
+      title: 'RPAScribe',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: const Color(0xFF3B5BDB),
@@ -75,7 +75,28 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Meetings')),
+      appBar: AppBar(
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.asset('assets/icon.png', width: 32, height: 32),
+            ),
+            const SizedBox(width: 10),
+            const Text.rich(
+              TextSpan(children: [
+                TextSpan(
+                    text: 'RPA',
+                    style: TextStyle(fontWeight: FontWeight.w600)),
+                TextSpan(
+                    text: 'Scribe',
+                    style: TextStyle(color: Color(0xFF185FA5))),
+              ]),
+            ),
+          ],
+        ),
+      ),
       body: _meetings.isEmpty
           ? const Center(
               child: Padding(

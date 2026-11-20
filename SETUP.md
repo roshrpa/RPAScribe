@@ -20,3 +20,12 @@ In `ios/Runner/Info.plist`, add:
 
 ## Run
 flutter run
+
+## Logo and app icon
+Logo files are in `assets/`. After copying `assets/` into your Flutter project, run:
+
+    flutter pub get
+    dart run flutter_launcher_icons
+
+Set the app name shown on the phone: in `android/app/src/main/AndroidManifest.xml`
+change `android:label` to `RPAScribe`.
