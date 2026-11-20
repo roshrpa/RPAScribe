@@ -1,0 +1,53 @@
+name: Build APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create Android project and copy app code
+        run: |
+          flutter create --project-name meeting_summary --org com.rpascribe --platforms android app
+          rm -rf app/lib app/assets
+          cp -r lib app/lib
+          cp -r assets app/assets
+          cp pubspec.yaml app/pubspec.yaml
+
+      - name: Configure Android (mic permission, name, min SDK)
+        working-directory: app
+        run: |
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          sed -i '/<manifest/a \    <uses-permission android:name="android.permission.RECORD_AUDIO" />' "$MANIFEST"
+          sed -i 's/android:label="[^"]*"/android:label="RPAScribe"/' "$MANIFEST"
+          for f in android/app/build.gradle android/app/build.gradle.kts; do
+            [ -f "$f" ] && sed -i -E 's/minSdk(Version)?( *=)? *flutter\.minSdkVersion/minSdk = 23/' "$f"
+          done
+          grep -n "minSdk" android/app/build.gradle* || true
+
+      - name: Build
+        working-directory: app
+        run: |
+          flutter pub get
+          dart run flutter_launcher_icons
+          flutter build apk --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RPAScribe-apk
+          path: app/build/app/outputs/flutter-apk/app-release.apk
